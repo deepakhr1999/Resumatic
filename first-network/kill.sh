@@ -9,6 +9,7 @@ else
 	docker rmi -f $DOCKER_IMAGE_IDS
 fi
 echo y | docker network prune
-echo "Removing unwanted folders: channel-artifacts/*.block channel-artifacts/*.tx crypto-config"
+echo "Removing unwanted folders: channel-artifacts/*.block channel-artifacts/*.tx crypto-config, node_sdk/wallet"
 rm -rf channel-artifacts/*.block channel-artifacts/*.tx crypto-config
 rm -f docker-compose-e2e.yaml
+rm -rf ../node_sdk/wallet
