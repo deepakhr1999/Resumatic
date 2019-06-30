@@ -33,12 +33,18 @@ type Organisation struct{
 
 // Claim 
 type Claim struct{
-	UserID string `json:"UserID"`
-	OrgID string `json:"OrgID"`
-	Skill string `json:"Skill"`
+	UserID [32]byte `json:"UserID"`
+	OrgID [32]byte `json:"OrgID"`
+	Skill [32]byte `json:"Skill"`
 	Comments string `json:"Comments"`
-	Timestamp string `json:"Timestamp"`
+	Timestamp [32]byte `json:"Timestamp"`
 	IsVerified string `json:"IsVerified"`
+}
+
+// Issuing a certificate
+type Cert struct{
+	OrgID string `json:"OrgID"`
+	CertHash [32]byte `json:"CertHash"`
 }
 
 //initialization function
@@ -63,6 +69,8 @@ func  (t *HackidfChaincode) Invoke(stub shim.ChaincodeStubInterface)pb.Response{
 		return t.MakeClaim(stub, args)
 	}else if function == "VerifyClaim"{
 		return t.VerifyClaim(stub, args)
+	}else if function == "IssueCert"{
+		return t.IssueCert(stub, args)
 	}else if function == "Query"{
 		return t.Query(stub, args)
 	}
@@ -284,7 +292,7 @@ func  (t *HackidfChaincode) MakeClaim(stub shim.ChaincodeStubInterface, args []s
 	if UserVerifyPassword(stub, UserID, Password) == 0 {
 		return shim.Error("Password doesn't match user")
 	}
-	var Claim = &Claim{UserID:UserID, OrgID:OrgID, Skill:Skill, Comments:"NIL", Timestamp:Timestamp ,IsVerified:IsVerified}
+	var Claim = &Claim{UserID:sha256.Sum256([]byte(UserID)), OrgID:sha256.Sum256([]byte(OrgID)), Skill:sha256.Sum256([]byte(Skill)), Comments:"NIL", Timestamp:sha256.Sum256([]byte(Timestamp)) ,IsVerified:IsVerified}
 	ClaimJsonAsBytes, err :=json.Marshal(Claim)
 	if err != nil {
 		shim.Error("Error encountered while Marshalling")
@@ -316,6 +324,9 @@ func  (t *HackidfChaincode) VerifyClaim(stub shim.ChaincodeStubInterface, args [
 	if err != nil {
 		return shim.Error("Error encountered during unmarshalling the data")
 	}
+	if Claim.OrgID != sha256.Sum256([]byte(OrgID)) {
+		return shim.Error("Not authorised to verify this claim")
+	}
 	Claim.IsVerified = "True"
 	ClaimJsonAsBytes, err :=json.Marshal(Claim)
 	if err != nil {
@@ -326,6 +337,31 @@ func  (t *HackidfChaincode) VerifyClaim(stub shim.ChaincodeStubInterface, args [
 		return shim.Error("error encountered while putting state")
 	}
 	fmt.Println("VERIFIED!!")
+	return shim.Success(nil)
+}
+
+// Issue Certificate
+func  (t *HackidfChaincode) IssueCert(stub shim.ChaincodeStubInterface, args []string)pb.Response{
+	var Hash = args[0]
+	var OrgID = args[1]
+	var Password = args[2]
+	var Certificate = args[3]
+	if CheckOrg(stub, OrgID) == 0 {
+		return shim.Error("Org isn't verified by InfoEaze.")
+	}
+	if OrgVerifyPassword(stub, OrgID, Password) == 0 {
+		return shim.Error("Password doesn't match Organisation")
+	}
+	var Cert = &Cert{OrgID:OrgID, CertHash:sha256.Sum256([]byte(Certificate))}
+	CertJsonAsBytes, err :=json.Marshal(Cert)
+	if err != nil {
+		shim.Error("Error encountered while Marshalling")
+	}
+	err = stub.PutState(Hash, CertJsonAsBytes)
+	if err != nil {
+		shim.Error("Error encountered while Making Claim")
+	}
+	fmt.Println("Ledger Updated Successfully")
 	return shim.Success(nil)
 }
 
