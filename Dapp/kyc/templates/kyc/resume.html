@@ -1,0 +1,90 @@
+{% extends "orders/base.html" %}
+{% load static %}
+{% block content %}
+<script>
+    async function query(tag){
+        url = `http://localhost:8000/query/${tag.getAttribute('token')}`;
+        console.log(url)
+        var xmlHttp = new XMLHttpRequest();
+        xmlHttp.onreadystatechange = function() {
+        if (this.responseText=="True"){
+                tag.classList.remove("bg-warning");
+                tag.classList.add("bg-success");
+                tag.innerHTML = "Verified";
+        }
+        }
+        xmlHttp.open("GET", url, true);
+        await xmlHttp.send();
+    }
+</script>
+    <style>
+        {% if sent %}
+        #resume{
+            background-color: #d1ecf1;
+        }
+        {% endif %}
+        .container{
+            padding: 2em;
+        }
+    </style>
+
+    <div class="container"  id="resume">
+
+        <h2 class="font-weight-bold text-black">Organization:  {{org}}</h2>
+        {% if not sent %}
+        <form method="POST" action="{% url 'resume' resume_id=id %}" id="resume" class="my-4" style="width: 30em">
+            {% csrf_token %}
+            <input type="text" placeholder="{{org}}" style="width: 18em; border:none;" name="org">
+            <button>Change Org</button>
+        </form>
+        {% endif %}
+        <button class="btn btn-info text-white my-4" onclick="verify()">Verify</button>
+
+        <div class="my-3">
+            <h3>{{user.first_name}} {{user.last_name}}</h3>
+            <h4>{{user.email}}</h4>
+        </div>
+        <br>
+    {% for cert in certs %}
+        <div class="row" data-aos="fade">
+        <div class="col-md-12">
+            <div class="job-post-item bg-white p-4 d-block align-items-center">
+
+                <div class="mb-4 mb-md-0 mr-5">
+                <div class="job-post-item-header d-flex align-items-center">
+                <h2 class="mr-3 text-black h4">{{cert.title}}</h2>
+                    <div class="badge-wrap">
+                    <span class="certs bg-warning text-white badge py-2 px-4" token="{{cert.token}}">Not Verified</span>
+                    </div>
+                </div>
+                <div class="job-post-item-body d-block d-md-flex">
+                    <div class="mr-3">
+                        <span class="fl-bigmug-line-portfolio23"></span>
+                        <a href="#">{{cert.org}}</a></div>
+                    <div class="mr-3"><span class="fl-bigmug-line-big104"></span> <span>{{cert.time_till}}</span></div>
+                    <div><span>#ID: {{cert.token}}</span></div>
+                </div>
+                </div>        
+                
+                </div>
+            </div>
+        </div>
+    {% endfor %}
+        {% if not sent %}
+        <form method="POST" action="{% url 'resume' resume_id=id %}" class="mt-4" style="width: 30em">
+            {% csrf_token %}
+            <button class="btn btn-info text-white my-4" name="sent">Send Resume</button>
+            <button class="btn btn-info text-white my-4" name="delete">Delete</button>
+        </form>
+        {% endif %}
+    </div>  
+<script>
+    async function verify(){
+        certs = document.querySelectorAll(".certs");
+        console.log(certs);
+        certs.forEach(cert => {
+            query(cert);
+        });
+    }
+</script>
+{% endblock %}

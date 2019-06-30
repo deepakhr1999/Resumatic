@@ -1,0 +1,90 @@
+{% extends "orders/base.html" %}
+{% load static %}
+{% block content %}
+  <script>
+      async function query(tag){
+        url = `http://localhost:8000/query/${tag.getAttribute('token')}`;
+        var xmlHttp = new XMLHttpRequest();
+        xmlHttp.onreadystatechange = function() {
+          if (this.responseText=="True"){
+                  tag.classList.remove("bg-warning");
+                  tag.classList.add("bg-success");
+                  tag.innerHTML = "Verified";
+          }
+        }
+        xmlHttp.open("GET", url, true);
+        await xmlHttp.send();
+      }
+  </script>
+    <div class="site-section bg-light">
+      <h1 class="text-center">Welcome to ResuMatic</h1>
+      <br><br>
+    {% if user.is_authenticated %}
+      <div class="container">
+        <div class="row justify-content-start text-left mb-5">
+          <div class="col-md-9 " data-aos="fade">
+            <h2 class="font-weight-bold text-black">Curriculum Vitae</h2>
+          </div>
+        </div>
+
+        <!-- Resume starts here -->
+        <form method="POST" action="{% url 'resume' %}">
+            {% csrf_token %}
+            {% for cert in certs %}
+            <div class="row" data-aos="fade">
+            <div class="col-md-12">
+              <div class="job-post-item bg-white p-4 d-block align-items-center">
+   
+                 <div class="mb-4 mb-md-0 mr-5">
+                  <div class="job-post-item-header d-flex align-items-center">
+                    <h2 class="mr-3 text-black h4">{{cert.title}}</h2>
+                      <div class="badge-wrap">
+                       <span class="certs bg-warning text-white badge py-2 px-4" token="{{cert.token}}">Not Verified</span>
+                      </div>
+                  </div>
+                  <div class="job-post-item-body d-block d-md-flex">
+                    <div class="mr-3"><span class="fl-bigmug-line-portfolio23"></span> <a href="#">{{cert.org}}</a></div>
+                    <div class="mr-3"><span class="fl-bigmug-line-big104"></span> <span>{{cert.time_till}}</span></div>
+                    <div><span>#ID: {{cert.token}}</span></div>
+                    
+                     <div class="ml-auto float-right">
+                       <input type="checkbox" name="tokens" value="{{cert.token}}">
+                     </div>
+                   </div>
+                  </div>        
+                    
+                 </div>
+              </div>
+            </div>
+           {% endfor %}
+           <br>
+           <button class="btn btn-info">Make resume</button>
+        </form>
+        <br>
+        <div id="Resumes" class="my-5">
+            <div class="row justify-content-start text-left mb-3">
+                <div class="col-md-9 " data-aos="fade">
+                  <h2 class="font-weight-bold text-black">Resumes</h2>
+                </div>
+            </div>
+            {% for resume in resumes %}
+                <a href="{% url 'resume' resume_id=resume.id %}" style="font-size: 2em;">
+                   {{resume.org}} 
+                </a>
+            {% endfor %}
+        </div>
+        </div>
+      </div>
+
+        
+      {% endif %} 
+    </div>  
+    <script>
+        certs = document.querySelectorAll(".certs");
+        console.log(certs);
+        certs.forEach(cert => {
+            query(cert, "hello");
+            
+        });
+    </script>
+{% endblock %}

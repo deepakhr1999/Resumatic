@@ -1,0 +1,12 @@
+create_user:
+    UserID Username Password Email Ph
+
+create_org:
+    OrgId, Orgname, Passw
+
+
+MakeClaim:
+  Hash  UserID  Password OrgID  Skill Timestamp
+
+VerifyClaim:
+ 	Hash OrgId Pasw
