@@ -73,6 +73,8 @@ func  (t *HackidfChaincode) Invoke(stub shim.ChaincodeStubInterface)pb.Response{
 		return t.IssueCert(stub, args)
 	}else if function == "Query"{
 		return t.Query(stub, args)
+	}else if function == "QueryWithCert"{
+		return t.QueryWithCert(stub, args)
 	}
 	fmt.Println("invoke did not find func : " + function) //error
 	return shim.Error("Received unknown function invocation")
@@ -151,6 +153,7 @@ func UserVerifyPassword(stub shim.ChaincodeStubInterface, UserID string, Passwor
 }
 
 // Adding info about a user
+// args as : UserID, Username, Password, Email, Phonenumber
 func  (t *HackidfChaincode) CreateUser(stub shim.ChaincodeStubInterface, args []string)pb.Response{
 	var UserID = args[0]
 	var Username = args[1]
@@ -181,6 +184,7 @@ func  (t *HackidfChaincode) CreateUser(stub shim.ChaincodeStubInterface, args []
 }
 
 // Do KYC for peer
+// args as: UserID, Password(Hardcoded to "Password")
 func  (t *HackidfChaincode) VerifyUser(stub shim.ChaincodeStubInterface, args []string)pb.Response{
 	var UserID = args[0]
 	var Password = args[1]
@@ -216,6 +220,7 @@ func  (t *HackidfChaincode) VerifyUser(stub shim.ChaincodeStubInterface, args []
 }
 
 // Adding info about an Organisations
+// args as: OrgID, OrgName, Password(of Org)
 func  (t *HackidfChaincode) CreateOrg(stub shim.ChaincodeStubInterface, args []string)pb.Response{
 	var OrgID = args[0]
 	var OrgName = args[1]
@@ -243,6 +248,7 @@ func  (t *HackidfChaincode) CreateOrg(stub shim.ChaincodeStubInterface, args []s
 }
 
 // Verify Organisation
+// args as: OrgID, Password(Hardcoded to "Password")
 func  (t *HackidfChaincode) VerifyOrg(stub shim.ChaincodeStubInterface, args []string)pb.Response{
 	var OrgID = args[0]
 	var Password = args[1]
@@ -275,6 +281,7 @@ func  (t *HackidfChaincode) VerifyOrg(stub shim.ChaincodeStubInterface, args []s
 }
 
 // Make Claim
+// args as: Hash(string only :P), UserID, Password, OrgID, Skill, Timeline(Eg. 2017-18)
 func  (t *HackidfChaincode) MakeClaim(stub shim.ChaincodeStubInterface, args []string)pb.Response{
 	var Hash = args[0]
 	var UserID = args[1]
@@ -306,6 +313,7 @@ func  (t *HackidfChaincode) MakeClaim(stub shim.ChaincodeStubInterface, args []s
 }
 
 // Verify Claim
+// args as: Hash, OrgID, Password(of Organisation)
 func  (t *HackidfChaincode) VerifyClaim(stub shim.ChaincodeStubInterface, args []string)pb.Response{
 	var Hash = args[0]
 	var OrgID = args[1]
@@ -341,6 +349,7 @@ func  (t *HackidfChaincode) VerifyClaim(stub shim.ChaincodeStubInterface, args [
 }
 
 // Issue Certificate
+// args as: Hash(Token), OrgID, Password, Certificate(a string itself)
 func  (t *HackidfChaincode) IssueCert(stub shim.ChaincodeStubInterface, args []string)pb.Response{
 	var Hash = args[0]
 	var OrgID = args[1]
@@ -366,6 +375,7 @@ func  (t *HackidfChaincode) IssueCert(stub shim.ChaincodeStubInterface, args []s
 }
 
 // Query Function
+// args as: any_string
 func  (t *HackidfChaincode) Query(stub shim.ChaincodeStubInterface, args []string)pb.Response{
 	DataAsBytes, err := stub.GetState(args[0])
 	if err != nil {
@@ -375,6 +385,25 @@ func  (t *HackidfChaincode) Query(stub shim.ChaincodeStubInterface, args []strin
 	}
 	return shim.Success(DataAsBytes)
 }
+
+// Query Function when cert is given
+// args as: Hash(basically token), Certificate(basically string)
+func  (t *HackidfChaincode) QueryWithCert(stub shim.ChaincodeStubInterface, args []string)pb.Response{
+	DataAsBytes, err := stub.GetState(args[0])
+	var Certificate = args[1]
+	if err != nil {
+		return shim.Error("Error encountered")
+	}else if DataAsBytes == nil {
+		return shim.Error("Hash Token provided is not valid.")
+	}
+	var Cert Cert
+	err = json.Unmarshal(DataAsBytes, &Cert)
+	if Cert.CertHash != sha256.Sum256([]byte(Certificate)){
+		return shim.Error("Certificate doesn't match with details of hash")
+	}
+	return shim.Success(DataAsBytes)
+}
+
 // MAIN FUNCTION
 func  main() {
 	err := shim.Start(new(HackidfChaincode))
