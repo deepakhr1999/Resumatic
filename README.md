@@ -1,2 +1,2 @@
 # Resumatic
-Blockchain Boosted Web-app for Automatic Resume Verification
+Blockchain Web-app for Automatic Resume Verification
